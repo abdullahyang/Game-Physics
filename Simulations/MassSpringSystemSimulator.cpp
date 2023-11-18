@@ -4,7 +4,7 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 {
 	m_iTestCase = 0;
 	m_fMass = 1;
-	m_fStiffness = 15;
+	m_fStiffness = 50;
 	m_fDamping = 0;
 	m_iIntegrator = EULER;
 	// Limit max. 100 MassPoints
@@ -20,7 +20,7 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 // UI Functions
 const char* MassSpringSystemSimulator::getTestCasesStr()
 {
-	return "Euler,Midpoint";
+	return "Euler,Midpoint,Leapfog";
 }
 void MassSpringSystemSimulator::initUI(DrawingUtilitiesClass* DUC)
 {
@@ -98,7 +98,19 @@ void MassSpringSystemSimulator::drawFrame(ID3D11DeviceContext* pd3dImmediateCont
 }
 void MassSpringSystemSimulator::notifyCaseChanged(int testCase)
 {
-	cout << testCase;
+	switch (testCase)
+	{
+	case 0:
+		m_iIntegrator = EULER;
+		break;
+	case 1:
+		m_iIntegrator = MIDPOINT;
+		break;
+	case 2:
+		m_iIntegrator = LEAPFROG;
+	default:
+		break;
+	}
 }
 void MassSpringSystemSimulator::externalForcesCalculations(float timeElapsed)
 {
@@ -170,18 +182,17 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 						massPointArray[idx].Velocity[axis] = -massPointArray[idx].Velocity[axis];
 					}
 				}
-
 			}
 		}
-		cout << "*************** New Timestep of " << timeStep << " ***************" << endl;
+		//cout << "*************** New Timestep of " << timeStep << " ***************" << endl;
 
 		// Update velocity
 		for (int idx = 0; idx < numMassPoint; idx++)
 		{
-			cout << "Mass Point No. " << idx << ":" << endl;
-			cout << "Force: " << massPointArray[idx].force << endl;
-			cout << "Position: " << massPointArray[idx].position << endl;
-			cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
+			//cout << "Mass Point No. " << idx << ":" << endl;
+			//cout << "Force: " << massPointArray[idx].force << endl;
+			//cout << "Position: " << massPointArray[idx].position << endl;
+			//cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
 
 			// Sum of force
 			massPointArray[idx].force -= m_fDamping * massPointArray[idx].Velocity;
@@ -199,11 +210,58 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 			}
 			// Clear force
 			massPointArray[idx].force = Vec3(0, 0, 0);
-			cout << "New Velocity" << massPointArray[idx].Velocity << endl;
+			//cout << "New Velocity" << massPointArray[idx].Velocity << endl;
 		}
 		break;
 	case LEAPFROG:
-		// TODO
+		// Add spring force on mass points
+		for (int idx = 0; idx < numSpring; idx++)
+		{
+			Vec3 pos1 = massPointArray[springArray[idx].masspoint1].position;
+			Vec3 pos2 = massPointArray[springArray[idx].masspoint2].position;
+			Vec3 distanceVec = pos1 - pos2;
+			// Calculate length of spring
+			springArray[idx].length = sqrt(distanceVec[0] * distanceVec[0] + distanceVec[1] * distanceVec[1] + distanceVec[2] * distanceVec[2]);
+
+			// Calculate force of springs
+			float springForce = -m_fStiffness * (springArray[idx].length - springArray[idx].initialLength);
+
+			// Direction of force
+			Vec3 dir1 = distanceVec / springArray[idx].length;
+
+			massPointArray[springArray[idx].masspoint1].force += springForce * dir1;
+			massPointArray[springArray[idx].masspoint2].force += -springForce * dir1;
+		}
+		// Update velocity
+		for (int idx = 0; idx < numMassPoint; idx++)
+		{
+			cout << "Mass Point No. " << idx << ":" << endl;
+			cout << "Force: " << massPointArray[idx].force << endl;
+			cout << "Position: " << massPointArray[idx].position << endl;
+			cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
+
+			// Sum of force
+			massPointArray[idx].force -= m_fDamping * massPointArray[idx].Velocity;
+			massPointArray[idx].force += m_externalForce;
+			Vec3 forceSum = massPointArray[idx].force;
+			// Acceleration (Newton's 2nd Law)
+			Vec3 acc = forceSum / m_fMass;
+			if (!massPointArray[idx].isFixed)
+			{
+				// Update position
+				massPointArray[idx].position += massPointArray[idx].Velocity * timeStep + 0.5 * acc * timeStep * timeStep;
+
+				// Calculate half-step velocity
+				Vec3 v_half = massPointArray[idx].Velocity + 0.5 * acc * timeStep;
+
+				// Update velocity
+				massPointArray[idx].Velocity = v_half + 0.5 * acc * timeStep;
+			}
+			// Clear force
+			massPointArray[idx].force = Vec3(0, 0, 0);
+			cout << "New Velocity" << massPointArray[idx].Velocity << endl;
+		}
+		cout << "*************** New Timestep of " << timeStep << " ***************" << endl;
 		break;
 	case MIDPOINT:
 		Vec3 xtmp[100];
