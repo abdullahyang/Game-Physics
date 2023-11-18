@@ -257,6 +257,21 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 				// Update velocity
 				massPointArray[idx].Velocity = v_half + 0.5 * acc * timeStep;
 			}
+
+			// Deal with collision
+			if (wallCollision)
+			{
+				for (int axis = 0; axis < 3; axis++)
+				{
+					if (massPointArray[idx].position[axis] > 0.5 || massPointArray[idx].position[axis] < -0.5)
+					{
+						int sign = abs(massPointArray[idx].position[axis]) / massPointArray[idx].position[axis];
+						massPointArray[idx].position[axis] = sign * (1 - abs(massPointArray[idx].position[axis]));
+						massPointArray[idx].Velocity[axis] = -massPointArray[idx].Velocity[axis];
+					}
+				}
+			}
+
 			// Clear force
 			massPointArray[idx].force = Vec3(0, 0, 0);
 			cout << "New Velocity" << massPointArray[idx].Velocity << endl;
