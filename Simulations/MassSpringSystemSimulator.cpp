@@ -5,7 +5,7 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 	m_iTestCase = 0;
 	m_fMass = 1;
 	m_fStiffness = 50;
-	m_fDamping = 0;
+	m_fDamping = 0.2;
 	m_iIntegrator = EULER;
 	// Limit max. 100 MassPoints
 	massPointArray = new MassPoint[100];
@@ -20,10 +20,12 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 // UI Functions
 const char* MassSpringSystemSimulator::getTestCasesStr()
 {
-	return "Euler,Midpoint,Leapfog";
+	return "Euler,Midpoint,Leapfrog";
 }
 void MassSpringSystemSimulator::initUI(DrawingUtilitiesClass* DUC)
 {
+	delete massPointArray;
+	delete springArray;
 	massPointArray = new MassPoint[100];
 	springArray = new Spring[100];
 	numMassPoint = 0;
@@ -31,8 +33,9 @@ void MassSpringSystemSimulator::initUI(DrawingUtilitiesClass* DUC)
 	this->DUC = DUC;
 	TwAddVarRW(DUC->g_pTweakBar, "Mass", TW_TYPE_FLOAT, &m_fMass, "min=1");
 	TwAddVarRW(DUC->g_pTweakBar, "Stiffness", TW_TYPE_FLOAT, &m_fStiffness, "min=0");
-	TwAddVarRW(DUC->g_pTweakBar, "Damping", TW_TYPE_FLOAT, &m_fDamping, "");
+	TwAddVarRW(DUC->g_pTweakBar, "Damping", TW_TYPE_FLOAT, &m_fDamping, "step=0.1 min=0");
 	TwAddVarRW(DUC->g_pTweakBar, "Collision", TW_TYPE_BOOL8, &wallCollision, "");
+	TwAddVarRW(DUC->g_pTweakBar, "Gravity", TW_TYPE_BOOL8, &gravity, "");
 
 	std::mt19937 eng;
 	std::uniform_real_distribution<float> randVel(-0.5f, 0.5f);
@@ -63,7 +66,14 @@ void MassSpringSystemSimulator::initUI(DrawingUtilitiesClass* DUC)
 	addSpring(18, 9, 0.1);
 	addSpring(14, 7, 0.5);
 
-
+	if (gravity)
+	{
+		applyExternalForce(Vec3(0, -9.8, 0));
+	}
+	else
+	{
+		applyExternalForce(Vec3(0, 0, 0));
+	}
 	//TwAddVarRW(DUC->g_pTweakBar, "Sphere Size", TW_TYPE_FLOAT, &m_fSphereSize, "min=0.01 step=0.01");
 }
 void MassSpringSystemSimulator::reset()
@@ -108,29 +118,14 @@ void MassSpringSystemSimulator::notifyCaseChanged(int testCase)
 		break;
 	case 2:
 		m_iIntegrator = LEAPFROG;
+		break;
 	default:
 		break;
 	}
 }
 void MassSpringSystemSimulator::externalForcesCalculations(float timeElapsed)
 {
-	Point2D mouseDiff;
-	mouseDiff.x = m_trackmouse.x - m_oldtrackmouse.x;
-	mouseDiff.y = m_trackmouse.y - m_oldtrackmouse.y;
-	if (mouseDiff.x != 0 || mouseDiff.y != 0)
-	{
-		Mat4 worldViewInv = Mat4(DUC->g_camera.GetWorldMatrix() * DUC->g_camera.GetViewMatrix());
-		worldViewInv = worldViewInv.inverse();
-		Vec3 inputView = Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0);
-		Vec3 inputWorld = worldViewInv.transformVectorNormal(inputView);
-		// find a proper scale!
-		float inputScale = 0.001f;
-		inputWorld = inputWorld * inputScale;
-		for (int idx = 0; idx < numMassPoint; idx++)
-		{
-			massPointArray[idx].position += inputWorld;
-		}
-	}
+	
 }
 
 // TODO: Add Midpoint method and Leap-Frog method
@@ -189,10 +184,10 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 		// Update velocity
 		for (int idx = 0; idx < numMassPoint; idx++)
 		{
-			//cout << "Mass Point No. " << idx << ":" << endl;
-			//cout << "Force: " << massPointArray[idx].force << endl;
-			//cout << "Position: " << massPointArray[idx].position << endl;
-			//cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
+			cout << "Mass Point No. " << idx << ":" << endl;
+			cout << "Force: " << massPointArray[idx].force << endl;
+			cout << "Position: " << massPointArray[idx].position << endl;
+			cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
 
 			// Sum of force
 			massPointArray[idx].force -= m_fDamping * massPointArray[idx].Velocity;
@@ -210,7 +205,7 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 			}
 			// Clear force
 			massPointArray[idx].force = Vec3(0, 0, 0);
-			//cout << "New Velocity" << massPointArray[idx].Velocity << endl;
+			cout << "New Velocity" << massPointArray[idx].Velocity << endl;
 		}
 		break;
 	case LEAPFROG:
@@ -278,6 +273,7 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 		}
 		cout << "*************** New Timestep of " << timeStep << " ***************" << endl;
 		break;
+
 	case MIDPOINT:
 		Vec3 xtmp[100];
 		Vec3 vtmp[100];
@@ -292,6 +288,7 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 		for(int idx = 0; idx < numMassPoint; idx++)
 		{
 			xtmp[idx] = massPointArray[idx].position + timeStep / 2 * massPointArray[idx].Velocity;
+			
 		}
 		for (int idx = 0; idx < numSpring; idx++)
 		{
@@ -434,7 +431,6 @@ void MassSpringSystemSimulator::addSpring(int masspoint1, int masspoint2, float 
 
 	Vec3 pos1 = massPointArray[masspoint1].position;
 	Vec3 pos2 = massPointArray[masspoint2].position;
-
 
 	springArray[numSpring] = newSpring;
 	numSpring++;

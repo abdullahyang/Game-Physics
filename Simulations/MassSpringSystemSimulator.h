@@ -69,6 +69,7 @@ private:
 	int numMassPoint;
 	int numSpring;
 	bool wallCollision;
+	bool gravity;
 
 	// UI Attributes
 	Vec3 m_externalForce;
