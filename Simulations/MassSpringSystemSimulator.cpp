@@ -325,8 +325,8 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 			{
 				vtmp[idx] = massPointArray[idx].Velocity + (acc * timeStep/2);
 			}
-			// Clear force
-			massPointArray[idx].force = Vec3(0, 0, 0);
+
+			
 		}
 
 		// Update position using Midpoint velocity
@@ -360,6 +360,13 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 			// Sum of force
 			ftmp[idx] -= m_fDamping * vtmp[idx];
 			ftmp[idx] += m_externalForce;
+			cout << "Mass Point No. " << idx << ":" << endl;
+			cout << "Force: " << massPointArray[idx].force << endl;
+
+			cout << "Midpoint Force: " << ftmp[idx] << endl;
+			cout << "Midpoint Position: " << xtmp[idx] << endl;
+			cout << "Midpoint Velocity: " << vtmp[idx] << endl;
+			cout << "Old Velocity" << massPointArray[idx].Velocity << endl;
 			Vec3 forceSum = ftmp[idx];
 			// Acceleration (Newton's 2nd Law)
 			Vec3 acc = forceSum / m_fMass;
@@ -368,10 +375,10 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 				massPointArray[idx].Velocity = Vec3(0, 0, 0);
 			}
 			else
+			{
 				massPointArray[idx].Velocity += (acc * timeStep);
 			}
-			// Clear force
-			ftmp[idx] = Vec3(0, 0, 0);
+
 
 			// Deal with collision
 			if (wallCollision)
@@ -386,13 +393,15 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 					}
 				}
 			}
+			cout << "Position: " << massPointArray[idx].position << endl;
+			cout << "New Velocity" << massPointArray[idx].Velocity << endl;
+
+			// Clear force
+			ftmp[idx] = Vec3(0, 0, 0);
+			massPointArray[idx].force = Vec3(0, 0, 0);
 		}
 		break;
-	//default:
-		//break;
 	}
-	
-
 }
 void MassSpringSystemSimulator::onClick(int x, int y)
 {
