@@ -1,6 +1,7 @@
 #ifndef MASSSPRINGSYSTEMSIMULATOR_h
 #define MASSSPRINGSYSTEMSIMULATOR_h
 #include "Simulator.h"
+#include <vector>
 
 // Do Not Change
 #define EULER 0
@@ -9,11 +10,12 @@
 // Do Not Change
 
 
-class MassSpringSystemSimulator:public Simulator{
+class MassSpringSystemSimulator :public Simulator {
 public:
 	// Construtors
 	MassSpringSystemSimulator();
-	
+
+	// Structs
 	struct MassPoint
 	{
 		Vec3 position;
@@ -21,7 +23,6 @@ public:
 		bool isFixed;
 		Vec3 force;
 	};
-
 	struct Spring
 	{
 		int masspoint1;
@@ -31,8 +32,8 @@ public:
 	};
 
 	// UI Functions
-	const char * getTestCasesStr();
-	void initUI(DrawingUtilitiesClass * DUC);
+	const char* getTestCasesStr();
+	void initUI(DrawingUtilitiesClass* DUC);
 	void reset();
 	void drawFrame(ID3D11DeviceContext* pd3dImmediateContext);
 	void notifyCaseChanged(int testCase);
@@ -52,7 +53,7 @@ public:
 	Vec3 getPositionOfMassPoint(int index);
 	Vec3 getVelocityOfMassPoint(int index);
 	void applyExternalForce(Vec3 force);
-	
+
 	// Do Not Change
 	void setIntegrator(int integrator) {
 		m_iIntegrator = integrator;
@@ -64,18 +65,18 @@ private:
 	float m_fStiffness;
 	float m_fDamping;
 	int m_iIntegrator;
-	MassPoint* massPointArray;
-	Spring* springArray;
-	int numMassPoint;
-	int numSpring;
-	bool wallCollision;
-	bool gravity;
+	const Vec3 gravity = Vec3(0, -0.1, 0);
+	bool wallCollision{ true };
+	bool initLeapFrog{ true };
+	float initLeapFrogModifier{ 0.5 };
+	std::vector<Spring> springVector;
+	std::vector<MassPoint> massPointVector;
+	std::vector<std::pair<int, int>> connections;
 
 	// UI Attributes
 	Vec3 m_externalForce;
 	Point2D m_mouse;
 	Point2D m_trackmouse;
 	Point2D m_oldtrackmouse;
-
 };
 #endif
