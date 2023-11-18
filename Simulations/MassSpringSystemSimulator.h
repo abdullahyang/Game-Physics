@@ -68,6 +68,7 @@ private:
 	Spring* springArray;
 	int numMassPoint;
 	int numSpring;
+	bool wallCollision;
 
 	// UI Attributes
 	Vec3 m_externalForce;

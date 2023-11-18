@@ -2,9 +2,9 @@
 
 MassSpringSystemSimulator::MassSpringSystemSimulator()
 {
-	//m_iTestCase = 0;
+	m_iTestCase = 0;
 	m_fMass = 1;
-	m_fStiffness = 0.5;
+	m_fStiffness = 15;
 	m_fDamping = 0;
 	m_iIntegrator = EULER;
 	// Limit max. 100 MassPoints
@@ -13,33 +13,112 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 	springArray = new Spring[100];
 	numMassPoint = 0;
 	numSpring = 0;
+	wallCollision = FALSE;
 }
 
 // TODO: Complete UI Functions to allow UI interaction, see Demo 4 in PDF document
 // UI Functions
 const char* MassSpringSystemSimulator::getTestCasesStr()
 {
-	return "test";
+	return "Euler,Midpoint";
 }
 void MassSpringSystemSimulator::initUI(DrawingUtilitiesClass* DUC)
 {
+	massPointArray = new MassPoint[100];
+	springArray = new Spring[100];
+	numMassPoint = 0;
+	numSpring = 0;
+	this->DUC = DUC;
+	TwAddVarRW(DUC->g_pTweakBar, "Mass", TW_TYPE_FLOAT, &m_fMass, "min=1");
+	TwAddVarRW(DUC->g_pTweakBar, "Stiffness", TW_TYPE_FLOAT, &m_fStiffness, "min=0");
+	TwAddVarRW(DUC->g_pTweakBar, "Damping", TW_TYPE_FLOAT, &m_fDamping, "");
+	TwAddVarRW(DUC->g_pTweakBar, "Collision", TW_TYPE_BOOL8, &wallCollision, "");
 
+	std::mt19937 eng;
+	std::uniform_real_distribution<float> randVel(-0.5f, 0.5f);
+	std::uniform_real_distribution<float> randPos(-0.5f, 0.5f);
+	for (int i = 0; i < 20; i++)
+	{
+		Vec3 newPos = Vec3(randPos(eng), randPos(eng), randPos(eng));
+		Vec3 newVel = Vec3(randVel(eng), randVel(eng), randVel(eng));
+		addMassPoint(newPos, newVel, (i%3==0));
+	}
+	addSpring(0, 1, 0.3);
+	addSpring(0, 2, 0.5);
+	addSpring(2, 3, 0.8);
+	addSpring(4, 5, 0.2);
+	addSpring(5, 6, 0.1);
+	addSpring(7, 8, 0.3);
+	addSpring(8, 9, 0.3);
+	addSpring(10, 11, 0.7);
+	addSpring(11, 12, 0.1);
+	addSpring(12, 13, 0.9);
+	addSpring(13, 14, 0.8);
+	addSpring(15, 1, 0.2);
+	addSpring(16, 13, 0.4);
+	addSpring(17, 18, 0.6);
+	addSpring(18, 19, 0.2);
+	addSpring(19, 20, 0.5);
+	addSpring(20, 6, 0.8);
+	addSpring(18, 9, 0.1);
+	addSpring(14, 7, 0.5);
+
+
+	//TwAddVarRW(DUC->g_pTweakBar, "Sphere Size", TW_TYPE_FLOAT, &m_fSphereSize, "min=0.01 step=0.01");
 }
 void MassSpringSystemSimulator::reset()
 {
-
+	m_mouse.x = m_mouse.y = 0;
+	m_trackmouse.x = m_trackmouse.y = 0;
+	m_oldtrackmouse.x = m_oldtrackmouse.y = 0;
 }
 void MassSpringSystemSimulator::drawFrame(ID3D11DeviceContext* pd3dImmediateContext)
 {
+	std::mt19937 eng;
+	std::uniform_real_distribution<float> randCol(0.0f, 1.0f);
+	for (int idx = 0; idx < numMassPoint; idx++)
+	{
+		DUC->setUpLighting(Vec3(), 0.4 * Vec3(1, 1, 1), 100, 0.6 * Vec3(randCol(eng), randCol(eng), randCol(eng)));
+		DUC->drawSphere(massPointArray[idx].position, Vec3(0.05f, 0.05f, 0.05f));
+	}
+	DUC->beginLine();
+	for (int idx = 0; idx < numSpring; idx++)
+	{
+		if (springArray[idx].length > springArray[idx].initialLength)
+		{
+			DUC->drawLine(massPointArray[springArray[idx].masspoint1].position, Vec3(255, 0, 0), massPointArray[springArray[idx].masspoint2].position, Vec3(255, 0, 0));
+		}
+		else
+		{
+			DUC->drawLine(massPointArray[springArray[idx].masspoint1].position, Vec3(0, 255, 0), massPointArray[springArray[idx].masspoint2].position, Vec3(0, 255, 0));
+		}
+	}
+	DUC->endLine();
 
 }
 void MassSpringSystemSimulator::notifyCaseChanged(int testCase)
 {
-
+	cout << testCase;
 }
 void MassSpringSystemSimulator::externalForcesCalculations(float timeElapsed)
 {
-
+	Point2D mouseDiff;
+	mouseDiff.x = m_trackmouse.x - m_oldtrackmouse.x;
+	mouseDiff.y = m_trackmouse.y - m_oldtrackmouse.y;
+	if (mouseDiff.x != 0 || mouseDiff.y != 0)
+	{
+		Mat4 worldViewInv = Mat4(DUC->g_camera.GetWorldMatrix() * DUC->g_camera.GetViewMatrix());
+		worldViewInv = worldViewInv.inverse();
+		Vec3 inputView = Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0);
+		Vec3 inputWorld = worldViewInv.transformVectorNormal(inputView);
+		// find a proper scale!
+		float inputScale = 0.001f;
+		inputWorld = inputWorld * inputScale;
+		for (int idx = 0; idx < numMassPoint; idx++)
+		{
+			massPointArray[idx].position += inputWorld;
+		}
+	}
 }
 
 // TODO: Add Midpoint method and Leap-Frog method
@@ -78,6 +157,20 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 			else
 			{
 				massPointArray[idx].position += massPointArray[idx].Velocity * timeStep;
+			}
+			// Deal with collision
+			if (wallCollision)
+			{
+				for (int axis = 0; axis < 3; axis++)
+				{
+					if (massPointArray[idx].position[axis] > 0.5 || massPointArray[idx].position[axis] < -0.5)
+					{
+						int sign = abs(massPointArray[idx].position[axis]) / massPointArray[idx].position[axis];
+						massPointArray[idx].position[axis] = sign * (1 - abs(massPointArray[idx].position[axis]));
+						massPointArray[idx].Velocity[axis] = -massPointArray[idx].Velocity[axis];
+					}
+				}
+
 			}
 		}
 		cout << "*************** New Timestep of " << timeStep << " ***************" << endl;
@@ -220,11 +313,15 @@ void MassSpringSystemSimulator::simulateTimestep(float timeStep)
 }
 void MassSpringSystemSimulator::onClick(int x, int y)
 {
-
+	m_trackmouse.x = x;
+	m_trackmouse.y = y;
 }
 void MassSpringSystemSimulator::onMouse(int x, int y)
 {
-
+	m_oldtrackmouse.x = x;
+	m_oldtrackmouse.y = y;
+	m_trackmouse.x = x;
+	m_trackmouse.y = y;
 }
 
 // Specific Functions
