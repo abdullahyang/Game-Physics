@@ -1,5 +1,42 @@
 #include "MassSpringSystemSimulator.h"
 
+// Function to calculate the index of a mass point in the 1D vector
+int getIndex(int row, int col, int gridWidth) {
+	return row * gridWidth + col;
+}
+
+// Function to connect the mass points in a grid and return a tuple of tuples with indices
+std::vector<std::tuple<int, int>> MassSpringSystemSimulator::connectGrid(const std::vector<MassPoint>& massPointVector, int gridWidth) {
+	std::vector<std::tuple<int, int>> connections;
+
+	// Iterate through the rows and columns of the grid
+	for (int i = 0; i < gridWidth; ++i) {
+		for (int j = 0; j < gridWidth; ++j) {
+			// Connect horizontally to the right
+			if (j < gridWidth - 1) {
+				connections.emplace_back(getIndex(i, j, gridWidth), getIndex(i, j + 1, gridWidth));
+			}
+
+			// Connect vertically downwards
+			if (i < gridWidth - 1) {
+				connections.emplace_back(getIndex(i, j, gridWidth), getIndex(i + 1, j, gridWidth));
+			}
+
+			// Connect diagonally to the right and downwards
+			if (i < gridWidth - 1 && j < gridWidth - 1) {
+				connections.emplace_back(getIndex(i, j, gridWidth), getIndex(i + 1, j + 1, gridWidth));
+			}
+
+			// Connect diagonally to the left and downwards
+			if (i < gridWidth - 1 && j > 0) {
+				connections.emplace_back(getIndex(i, j, gridWidth), getIndex(i + 1, j - 1, gridWidth));
+			}
+		}
+	}
+
+	return connections;
+}
+
 MassSpringSystemSimulator::MassSpringSystemSimulator()
 {
 	m_fMass = 10;
@@ -13,22 +50,40 @@ MassSpringSystemSimulator::MassSpringSystemSimulator()
 	massPointVector.reserve(100);
 
 	// Generate 8 mass points with 16 springs (a cube)
-	massPointVector.emplace_back(MassPoint{ Vec3(-0.25, 0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(0.25, 0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(-0.25, -0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(0.25, -0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(-0.25, 0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(0.25, 0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(-0.25, -0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
-	massPointVector.emplace_back(MassPoint{ Vec3(0.25, -0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(-0.25, 0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(0.25, 0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(-0.25, -0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(0.25, -0.25, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(-0.25, 0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(0.25, 0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(-0.25, -0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+	//massPointVector.emplace_back(MassPoint{ Vec3(0.25, -0.25, -0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
 
-	connections.reserve(16);
-	connections = { { {0, 1}, {0, 2}, {0, 4}, {1, 5}, {1, 3}, {2, 3}, {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}, {0, 7}, {4, 3}, {5, 2}, {1, 6} } };
+	// Index pairing
+	//connections.reserve(16);
+	//connections = { { {0, 1}, {0, 2}, {0, 4}, {1, 5}, {1, 3}, {2, 3}, {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}, {0, 7}, {4, 3}, {5, 2}, {1, 6} } };
 
 	// Either set initial length to a constant (0.5) to form an inconsistent cube or randomise
-	for (auto& connection : connections)
+	//for (auto& connection : connections)
+	//{
+	//	springVector.emplace_back(Spring{ connection.first, connection.second, /*0.5*/(float)rand() / RAND_MAX, 0 });
+	//}
+
+	// Generate an 11x11 grid of equally spaced points
+	for (float i = -0.25; i <= 0.25; i += 0.05)
 	{
-		springVector.emplace_back(Spring{ connection.first, connection.second, /*0.5*/(float)rand() / RAND_MAX, 0 });
+		for (float j = -0.25; j <= 0.25; j += 0.05)
+		{
+			massPointVector.emplace_back(MassPoint{ Vec3(i, j, 0.25), Vec3(0, 0, 0), false, Vec3(0, 0, 0) });
+		}
+	}
+
+	// Index pairing
+	connections = connectGrid(massPointVector, 11);
+
+	// Generate springs
+	for (const auto& connection : connections) {
+		springVector.emplace_back(Spring{ std::get<0>(connection), std::get<1>(connection), 0.05, 0 });
 	}
 }
 
@@ -60,7 +115,7 @@ void MassSpringSystemSimulator::drawFrame(ID3D11DeviceContext* pd3dImmediateCont
 	for (MassPoint& point : massPointVector)
 	{
 		DUC->setUpLighting(Vec3(), 0.4 * Vec3(1, 1, 1), 100, 0.6 * Vec3(randCol(eng), randCol(eng), randCol(eng)));
-		DUC->drawSphere(point.position, Vec3(0.05, 0.05, 0.05));
+		DUC->drawSphere(point.position, Vec3(0.01, 0.01, 0.01));
 	}
 	for (Spring& spring : springVector)
 	{

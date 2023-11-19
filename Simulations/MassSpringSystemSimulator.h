@@ -71,7 +71,9 @@ private:
 	float initLeapFrogModifier{ 0.5 };
 	std::vector<Spring> springVector;
 	std::vector<MassPoint> massPointVector;
-	std::vector<std::pair<int, int>> connections;
+	std::vector<std::tuple<int, int>> connections;
+
+	std::vector<std::tuple<int, int>> connectGrid(const std::vector<MassPoint>& massPointVector, int gridWidth);
 
 	// UI Attributes
 	Vec3 m_externalForce;
