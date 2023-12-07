@@ -10,6 +10,8 @@ class RigidBodySystemSimulator:public Simulator{
 public:
 	// Construtors
 	RigidBodySystemSimulator();
+
+
 	
 	// Functions
 	const char * getTestCasesStr();
@@ -32,10 +34,24 @@ public:
 	void setOrientationOf(int i,Quat orientation);
 	void setVelocityOf(int i, Vec3 velocity);
 
+
+
 private:
 	// Attributes
 	// add your RigidBodySystem data members, for e.g.,
 	// RigidBodySystem * m_pRigidBodySystem; 
+	struct RigidBody
+	{
+		int id;
+		Vec3 pos;
+		int mass;
+		Vec3 size;
+		Vec3 LinearVelocity = Vec3(0, 0, 0);
+		Vec3 AngularVelocity = Vec3(0, 0, 0);
+		Quat orientation;
+	};
+	RigidBody* rigidBodyArray;
+	int rigidBodyNum;
 	Vec3 m_externalForce;
 
 	// UI Attributes
