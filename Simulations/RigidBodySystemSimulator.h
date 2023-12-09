@@ -26,7 +26,7 @@ public:
 		Vec3 cm_position;
 		int mass;
 		Vec3 size;
-		std::vector<Vec3> points;
+		std::vector<Vec3> vertices;
 		Vec3 linearVelocity;
 		Vec3 angularVelocity;
 		Vec3 angularMomentum;
@@ -39,12 +39,12 @@ public:
 		matrix4x4<double> translateMatrix;
 		matrix4x4<double> obj2WorldMatrix;
 
-		RigidBody(int _id, Vec3 _cm_position, int _mass, Vec3 _size, std::vector<Vec3> _points, Vec3 _linearVelocity, Vec3 _angularVelocity, Vec3 _angularMomentum, Quat _orientation, Vec3 _force, Vec3 _torque) {
+		RigidBody(int _id, Vec3 _cm_position, int _mass, Vec3 _size, std::vector<Vec3> _vertices, Vec3 _linearVelocity, Vec3 _angularVelocity, Vec3 _angularMomentum, Quat _orientation, Vec3 _force, Vec3 _torque) {
 			id = _id;
 			cm_position = _cm_position;
 			mass = _mass;
 			size = _size;
-			points = _points;
+			vertices = _vertices;
 			linearVelocity = _linearVelocity;
 			angularVelocity = _angularVelocity;
 			angularMomentum = _angularMomentum;
@@ -65,12 +65,13 @@ public:
 				0.0f, 0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 1.0f
 			};
-			translateMatrix = matrix4x4<double> {
-				1.0f, 0.0f, 0.0f, cm_position[0],
-				0.0f, 1.0f, 0.0f, cm_position[1],
-				0.0f, 0.0f, 1.0f, cm_position[2],
-				0.0f, 0.0f, 0.0f, 1.0f
+			translateMatrix = matrix4x4<double>{
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				_cm_position[0], _cm_position[1], _cm_position[2], 1.0f
 			};
+			obj2WorldMatrix = scaleMatrix * rotationMatrix * translateMatrix;
 		}
 	};
 
@@ -92,9 +93,10 @@ public:
 	Vec3 getLinearVelocityOfRigidBody(int i);
 	Vec3 getAngularVelocityOfRigidBody(int i);
 	void applyForceOnBody(int i, Vec3 loc, Vec3 force);
-	void addRigidBody(Vec3 position, Vec3 size, int mass);
+	void addRigidBody(Vec3 position, Vec3 size, int mass, Vec3 axis);
 	void setOrientationOf(int i, Quat orientation);
 	void setVelocityOf(int i, Vec3 velocity);
+
 
 private:
 	// Attributes
