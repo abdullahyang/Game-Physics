@@ -65,6 +65,13 @@ public:
 				0.0f, 0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 1.0f
 			};
+
+			scaleMatrix = matrix4x4<double>{
+				size[0], 0.0f, 0.0f, 0.0f,
+				0.0f, size[1], 0.0f, 0.0f,
+				0.0f, 0.0f, size[2], 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			};
 			translateMatrix = matrix4x4<double>{
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
@@ -93,7 +100,7 @@ public:
 	Vec3 getLinearVelocityOfRigidBody(int i);
 	Vec3 getAngularVelocityOfRigidBody(int i);
 	void applyForceOnBody(int i, Vec3 loc, Vec3 force);
-	void addRigidBody(Vec3 position, Vec3 size, int mass, Vec3 axis);
+	void addRigidBody(Vec3 position, Vec3 size, int mass);
 	void setOrientationOf(int i, Quat orientation);
 	void setVelocityOf(int i, Vec3 velocity);
 

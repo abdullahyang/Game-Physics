@@ -8,6 +8,7 @@ float timeFactor{ 2.0f };
 bool userInteraction{ false };
 bool gravityInfluence{ false };
 bool allowCollisions{ false };
+bool wallCollisions{ false };
 
 std::vector<Vec3> calculateVertices(Vec3 center, Vec3 size) {
 	std::vector<Vec3> vertices;
@@ -78,8 +79,10 @@ void printDetails(RigidBodySystemSimulator::RigidBody& rigidBody)
 void RigidBodySystemSimulator::resetRigidBody()
 {
 	rigidBodies.clear();
-	addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2, Vec3(0.0f, 0.0f, 1.0f) /* Z-axis */);
-	addRigidBody(Vec3(0.9, 0, 0), Vec3(1, 1, 0.5), 2, Vec3(0.0f, 1.0f, 0.0f) /* Y-axis */);
+	//addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2, Vec3(0.0f, 0.0f, 1.0f) /* Z-axis */);
+	//addRigidBody(Vec3(0.9, 0, 0), Vec3(1, 1, 0.5), 2, Vec3(0.0f, 1.0f, 0.0f) /* Y-axis */);
+	addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2) /* Z-axis */;
+	addRigidBody(Vec3(0.9, 0, 0), Vec3(1, 1, 0.5), 2 /* Y-axis */);
 }
 
 void RigidBodySystemSimulator::notifyCaseChanged(int testCase)
@@ -114,6 +117,19 @@ void RigidBodySystemSimulator::notifyCaseChanged(int testCase)
 			printDetails(rigidBodies.at(0));
 			break;
 		case 4:
+			allowCollisions = true;
+			rigidBodies.clear();
+
+			// Create 4 rigid bodies
+			//addRigidBody(Vec3(0, 0, 0), Vec3(0.3, 0.2, 0.25), 2, Vec3(0.0f, 0.0f, 1.0f) /* Z-axis */);
+			//addRigidBody(Vec3(0.3, 0, 0), Vec3(0.3, 0.3, 0.25), 2, Vec3(0.0f, 1.0f, 0.0f) /* Y-axis */);
+			//addRigidBody(Vec3(0, 0.3, 0), Vec3(0.2, 0.2, 0.25), 2, Vec3(1.0f, 0.0f, 0.0f) /* X-axis */);
+			//addRigidBody(Vec3(0, -0.5, 0), Vec3(0.2, 0.2, 0.7), 2, Vec3(0.6f, 0.0f, 0.8f));
+
+			// Enable wall collision
+			wallCollisions = true;
+			continueSimulation = true;
+
 			break;
 		default:
 			std::cout << "Empty\n";
@@ -140,8 +156,13 @@ void RigidBodySystemSimulator::externalForcesCalculations(float timeElapsed)
 	//pullforce -=  pullforce * 5.0f * timeElapsed;
 
 	if (userInteraction) {
-		applyForceOnBody(0, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
-		applyForceOnBody(1, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
+		// added support for arbitary number of rigid bodies
+		for (int i = 0; i < getNumberOfRigidBodies(); i++)
+		{
+			applyForceOnBody(i, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
+		}
+		//applyForceOnBody(0, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
+		//applyForceOnBody(1, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
 		//applyForceOnBody(0, Vec3(0.5f, 0.5f, 0.5f), pullforce);
 		//applyForceOnBody(1, Vec3(0.5f, 0.5f, 0.5f), pullforce);
 	}
@@ -229,11 +250,23 @@ void RigidBodySystemSimulator::simulateTimestep(float timeStep) {
 		// Remove all external forces after influencing linear velocity
 		m_externalForce = 0;
 	}
+
+	// added inter-collision support for arbitary number of rigid bodies
 	if (allowCollisions) {
-		CollisionInfo collisionTest = checkCollisionSAT(rigidBodies.at(0).obj2WorldMatrix, rigidBodies.at(1).obj2WorldMatrix);
-		if (collisionTest.isValid) {
-			collisionResponse(collisionTest, rigidBodies.at(0), rigidBodies.at(1));
+		for (int i = 0; i < getNumberOfRigidBodies()-1; i++)
+		{
+			for (int j = i + 1; j < getNumberOfRigidBodies(); j++)
+			{
+				CollisionInfo collisionTest = checkCollisionSAT(rigidBodies.at(i).obj2WorldMatrix, rigidBodies.at(j).obj2WorldMatrix);
+				if (collisionTest.isValid) {
+					collisionResponse(collisionTest, rigidBodies.at(i), rigidBodies.at(j));
+				}
+			}
 		}
+	}
+
+	if (wallCollisions) {
+		CollisionInfo collisionTest = checkCollisionSAT(rigidBodies.at(0).obj2WorldMatrix, rigidBodies.at(1).obj2WorldMatrix);
 	}
 }
 
@@ -277,7 +310,7 @@ void RigidBodySystemSimulator::applyForceOnBody(int i, Vec3 loc, Vec3 force) {
 	rigidBodies.at(i).torque = cross(loc, force);
 }
 
-void RigidBodySystemSimulator::addRigidBody(Vec3 position, Vec3 size, int mass, Vec3 axis)
+void RigidBodySystemSimulator::addRigidBody(Vec3 position, Vec3 size, int mass)
 {
 	RigidBody newRigidBody(
 		rigidBodies.size(),
@@ -289,7 +322,7 @@ void RigidBodySystemSimulator::addRigidBody(Vec3 position, Vec3 size, int mass, 
 		Vec3(0, 0, 0),
 		Vec3(0, 0, 0),
 		Quat(
-			axis,
+			Vec3(1.0f, 0.0f, 0.0f),
 			DirectX::XMConvertToRadians(90.0f) // 90 degrees
 		),
 		Vec3(0, 0, 0),
