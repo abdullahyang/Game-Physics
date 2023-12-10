@@ -80,10 +80,7 @@ void printDetails(RigidBodySystemSimulator::RigidBody& rigidBody)
 void RigidBodySystemSimulator::resetRigidBody()
 {
 	rigidBodies.clear();
-	//addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2, Vec3(0.0f, 0.0f, 1.0f) /* Z-axis */);
-	//addRigidBody(Vec3(0.9, 0, 0), Vec3(1, 1, 0.5), 2, Vec3(0.0f, 1.0f, 0.0f) /* Y-axis */);
-	addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2) /* Z-axis */;
-	
+	addRigidBody(Vec3(0, 0, 0), Vec3(1, 0.6, 0.5), 2);
 	setOrientationOf(0, Quat(Vec3(0.0f, 0.0f, 0.1f), (float)(M_PI) * 0.5f));
 
 }
@@ -181,14 +178,7 @@ void RigidBodySystemSimulator::externalForcesCalculations(float timeElapsed)
 		for (int i = 0; i < getNumberOfRigidBodies(); i++)
 		{
 			applyForceOnBody(i, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
-			// applyForceOnBody(i, rigidBodies.at(i).cm_position, pullforce);
-			// applyForceOnBody(i, Vec3((float)m_oldtrackmouse.x, (float)m_oldtrackmouse.y, 0), pullforce);
 		}
-		//applyForceOnBody(0, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
-		//applyForceOnBody(1, Vec3((float)mouseDiff.x, (float)-mouseDiff.y, 0), pullforce);
-		//applyForceOnBody(0, Vec3(0.5f, 0.5f, 0.5f), pullforce);
-		//applyForceOnBody(1, Vec3(0.5f, 0.5f, 0.5f), pullforce);
-		// m_externalForce += pullforce;
 	}
 
 }
@@ -303,7 +293,7 @@ void RigidBodySystemSimulator::simulateTimestep(float timeStep) {
 			
 			for (int j = 0; j < 3; j++)
 			{
-				// bouncing back when touch walls
+				// bouncing back when hitting walls
 				if (rigidBodies.at(i).cm_position[j] < -0.8 || rigidBodies.at(i).cm_position[j] > 0.8)
 				{
 					int sign = rigidBodies.at(i).cm_position[j] / abs(rigidBodies.at(i).cm_position[j]);
