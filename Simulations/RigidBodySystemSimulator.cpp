@@ -103,18 +103,20 @@ void RigidBodySystemSimulator::notifyCaseChanged(int testCase)
 			break;
 		case 2:
 			resetRigidBody();
+			userInteraction = true;
 			continueSimulation = true;
 			applyForceOnBody(0, Vec3(0.8, 0.3, 0.4), Vec3(1, 1, 1));
 			printDetails(rigidBodies.at(0));
 			break;
 		case 3:
 			rigidBodies.clear();
+			cout << "3!" << endl;
 			allowCollisions = true;
-			addRigidBody(Vec3(0, 0, 0), Vec3(0.3, 0.4, 0.5), 2) /* Z-axis */;
+			continueSimulation = true;
+			addRigidBody(Vec3(0, 0, 0), Vec3(0.3, 0.4, 0.5), 2);
 			setOrientationOf(0, Quat(Vec3(0.0f, 0.0f, 0.1f), (float)(M_PI) * 0.5f));
 			addRigidBody(Vec3(0.7, 0, 0), Vec3(0.5, 0.5, 0.25), 2);
 			setOrientationOf(1, Quat(Vec3(0.0f, 0.0f, 1.0f), (float)(M_PI) * 0.0f));
-			continueSimulation = true;
 			applyForceOnBody(0, Vec3(0.2, 0, 0), Vec3(70, 10, 40));
 			applyForceOnBody(1, Vec3(0.3, 0.5, 0.25), Vec3(-40, 10, 0));
 			printDetails(rigidBodies.at(0));
@@ -343,8 +345,8 @@ Vec3 RigidBodySystemSimulator::getAngularVelocityOfRigidBody(int i)
 }
 
 void RigidBodySystemSimulator::applyForceOnBody(int i, Vec3 loc, Vec3 force) {
-	rigidBodies.at(i).force = force;
-	rigidBodies.at(i).torque = cross(loc, force);
+	rigidBodies.at(i).force += force;
+	rigidBodies.at(i).torque += cross(loc, force);
 }
 
 void RigidBodySystemSimulator::addRigidBody(Vec3 position, Vec3 size, float mass)
