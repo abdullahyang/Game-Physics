@@ -10,6 +10,9 @@ DiffusionSimulator::DiffusionSimulator()
 	m_vfMovableObjectFinalPos = Vec3();
 	m_vfRotate = Vec3();
 	// rest to be implemented
+	length = 15;
+	width = 15;
+	alpha = 0.2;
 }
 
 const char * DiffusionSimulator::getTestCasesStr(){
@@ -27,6 +30,19 @@ void DiffusionSimulator::initUI(DrawingUtilitiesClass * DUC)
 {
 	this->DUC = DUC;
 	// to be implemented
+	switch (m_iTestCase)
+	{
+	case 0:
+		TwAddVarRW(DUC->g_pTweakBar, "length", TW_TYPE_INT32, &length, "min=1");
+		TwAddVarRW(DUC->g_pTweakBar, "width", TW_TYPE_INT32, &width, "min=1");
+		TwAddVarRW(DUC->g_pTweakBar, "alpha", TW_TYPE_FLOAT, &alpha, "min=0.1 step=0.1");
+		break;
+	case 1:
+
+		break;
+	case 2:break;
+	default:break;
+	}
 }
 
 void DiffusionSimulator::notifyCaseChanged(int testCase)
@@ -41,6 +57,10 @@ void DiffusionSimulator::notifyCaseChanged(int testCase)
 	{
 	case 0:
 		cout << "Explicit solver!\n";
+		length = 15;
+		width = 15;
+		alpha = 0.2;
+		T.setSize(length, width);
 		break;
 	case 1:
 		cout << "Implicit solver!\n";
@@ -51,8 +71,26 @@ void DiffusionSimulator::notifyCaseChanged(int testCase)
 	}
 }
 
-void DiffusionSimulator::diffuseTemperatureExplicit() {
-// to be implemented
+void DiffusionSimulator::diffuseTemperatureExplicit(float timeStep) {
+	Grid T_old = T;
+	int length = T.getSize()[0];
+	int width = T.getSize()[1];
+	for (int idx = 0; idx < length * width; idx++)
+	{
+		// set zero for boundary cells
+		if (idx % length == 0 || (idx + 1) % length == 0 || idx / width == 0 || idx / width == length - 1)
+		{
+			T.points[idx].value = 0;
+		}
+		else
+		{
+			// central difference
+			double x_diff = T_old.points[idx + 1].value - 2 * T_old.points[idx].value + T_old.points[idx - 1].value;
+			double y_diff = T_old.points[idx + width].value - 2 * T_old.points[idx].value + T_old.points[idx - width].value;
+			T.points[idx].value = T_old.points[idx].value + timeStep * alpha * (x_diff + y_diff);
+		}
+	}
+	
 }
 
 
@@ -93,12 +131,18 @@ void DiffusionSimulator::diffuseTemperatureImplicit() {
 
 void DiffusionSimulator::simulateTimestep(float timeStep)
 {
+	// Reset grid if size changes
+	if (T.getSize()[0] != length || T.getSize()[1] != width)
+	{
+		T.setSize(length, width);
+	}
+
 	// update current setup for each frame
 	switch (m_iTestCase)
 	{
 	case 0:
 		// feel free to change the signature of this function
-		diffuseTemperatureExplicit();
+		diffuseTemperatureExplicit(timeStep);
 		break;
 	case 1:
 		// feel free to change the signature of this function
@@ -111,6 +155,21 @@ void DiffusionSimulator::drawObjects()
 {
 	// to be implemented
 	//visualization
+	double scale = 1.0 / length;
+	for (int i = 0; i < length * width; i++)
+	{
+		float val = T.points[i].value;
+		if (val < 0)
+		{
+			DUC->setUpLighting(Vec3(), 0.4 * Vec3(1, 1, 1), 100, -val * 0.05 * Vec3(1.0f, 0.0f, 0.0f));
+		}
+		else
+		{
+			DUC->setUpLighting(Vec3(), 0.4 * Vec3(1, 1, 1), 100, val * 0.05 * Vec3(1.0f, 1.0f, 1.0f));
+		}
+		DUC->drawSphere(Vec3(i%width, i/width, 0) * scale - Vec3(0.5, 0.5, 0), Vec3(0.05, 0.05, 0.05));
+	}
+	
 }
 
 

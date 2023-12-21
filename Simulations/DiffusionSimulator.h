@@ -6,6 +6,46 @@
 
 class Grid {
 	// to be implemented
+public:
+	Grid()
+	{
+		length = 16;
+		width = 16;
+		points = new point[length * width];
+	}
+	struct point
+	{
+		double value;
+	};
+	point* getPoints()
+	{
+		return points;
+	}
+	void setSize(int len, int wid)
+	{
+		delete points;
+		length = len;
+		width = wid;
+		points = new point[length * width];
+		for (int i = 0; i < length * width; i++)
+		{
+			points[i].value = rand() % 100 - 50;
+			cout << points[i].value << endl;
+		}
+	}
+	int* getSize()
+	{
+		int size[2];
+		size[0] = length;
+		size[1] = width;
+		return size;
+	}
+	point* points;
+private:
+	int length;
+	int width;
+
+
 };
 
 
@@ -29,7 +69,7 @@ public:
 	void drawObjects();
 
 	// Feel free to change the signature of these functions, add arguments, etc.
-	void diffuseTemperatureExplicit();
+	void diffuseTemperatureExplicit(float timeStep);
 	void diffuseTemperatureImplicit();
 
 private:
@@ -41,6 +81,9 @@ private:
 	Point2D m_trackmouse;
 	Point2D m_oldtrackmouse;
 	Grid T;
+	double alpha;
+	int length;
+	int width;
 };
 
 #endif
