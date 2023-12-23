@@ -63,6 +63,10 @@ void DiffusionSimulator::notifyCaseChanged(int testCase)
 		T.setSize(length, width);
 		break;
 	case 1:
+		length = 15;
+		width = 15;
+		alpha = 0.2;
+		T.setSize(length, width);
 		cout << "Implicit solver!\n";
 		break;
 	default:
@@ -94,19 +98,57 @@ void DiffusionSimulator::diffuseTemperatureExplicit(float timeStep) {
 }
 
 
-void DiffusionSimulator::diffuseTemperatureImplicit() {
+void DiffusionSimulator::diffuseTemperatureImplicit(float timeStep) {
 	// solve A T = b
 
 	// This is just an example to show how to work with the PCG solver,
-	const int nx = 5;
-	const int ny = 5;
-	const int nz = 5;
-	const int N = nx * ny * nz;
+	//const int nx = 5;
+	//const int ny = 5;
+	//const int nz = 5;
+	//const int N = nx * ny * nz;
 
-	SparseMatrix<Real> A(N);
-	std::vector<Real> b(N);
+	//SparseMatrix<Real> A(N);
+	//std::vector<Real> b(N);
 
 	// This is the part where you have to assemble the system matrix A and the right-hand side b!
+	int length = T.getSize()[0];
+	int width = T.getSize()[1];
+	auto numPoints = length * width;
+	SparseMatrix<Real> A(numPoints);
+	std::vector<Real> b(numPoints);
+	for (int idx = 0; idx < numPoints; idx++)
+	{
+		b.at(idx) = T.points[idx].value;
+	}
+	for (size_t i = 0; i < numPoints; ++i) {
+		// Diagonal element
+		if (i == 0 || i % width == 0 || (i + 1) % width == 0 || i >= (numPoints - width)) {
+			// If it's a boundary cell, set the diagonal to 1.0
+			A.set_element(i, i, 1.0);
+		}
+		else {
+			// For non-boundary cells, set the diagonal element with the diffusion term
+			A.set_element(i, i, 1.0 + 4 * alpha * timeStep);
+		}
+
+		// Off-diagonal elements
+		if ((i + 1) % width != 0) {
+			// Check if i is not at the right edge
+			A.set_element(i, i + 1, -alpha * timeStep);
+		}
+		if (i % width != 0) {
+			// Check if i is not at the left edge
+			A.set_element(i, i - 1, -alpha * timeStep);
+		}
+		if (i + width < numPoints) {
+			// Check if i is not at the bottom edge
+			A.set_element(i, i + width, -alpha * timeStep);
+		}
+		if (i >= width) {
+			// Check if i is not at the top edge
+			A.set_element(i, i - width, -alpha * timeStep);
+		}
+	}
 
 	// perform solve
 	Real pcg_target_residual = 1e-05;
@@ -117,14 +159,22 @@ void DiffusionSimulator::diffuseTemperatureImplicit() {
 	SparsePCGSolver<Real> solver;
 	solver.set_solver_parameters(pcg_target_residual, pcg_max_iterations, 0.97, 0.25);
 
-	std::vector<Real> x(N);
-	for (int j = 0; j < N; ++j) { x[j] = 0.; }
+	std::vector<Real> x(numPoints);
+	for (int j = 0; j < numPoints; ++j) { x[j] = 0.; }
 
 	// preconditioners: 0 off, 1 diagonal, 2 incomplete cholesky
 	solver.solve(A, b, x, ret_pcg_residual, ret_pcg_iterations, 0);
 
 	// Final step is to extract the grid temperatures from the solution vector x
 	// to be implemented
+	for (int idx = 0; idx < length * width; idx++)
+	{
+		T.points[idx].value = x.at(idx);
+		if (idx % length == 0 || (idx + 1) % length == 0 || idx / width == 0 || idx / width == length - 1)
+		{
+			T.points[idx].value = 0;
+		}
+	}
 }
 
 
@@ -146,7 +196,7 @@ void DiffusionSimulator::simulateTimestep(float timeStep)
 		break;
 	case 1:
 		// feel free to change the signature of this function
-		diffuseTemperatureImplicit();
+		diffuseTemperatureImplicit(timeStep);
 		break;
 	}
 }

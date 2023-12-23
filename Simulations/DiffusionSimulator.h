@@ -29,8 +29,12 @@ public:
 		points = new point[length * width];
 		for (int i = 0; i < length * width; i++)
 		{
-			points[i].value = rand() % 100 - 50;
-			cout << points[i].value << endl;
+			points[i].value = 0;
+		}
+		for (int i = 0; i < 5 * length; i++)
+		{
+			//points[i].value = rand() % 100 - 50;
+			points[i].value = 25.0;
 		}
 	}
 	int* getSize()
@@ -70,7 +74,7 @@ public:
 
 	// Feel free to change the signature of these functions, add arguments, etc.
 	void diffuseTemperatureExplicit(float timeStep);
-	void diffuseTemperatureImplicit();
+	void diffuseTemperatureImplicit(float timeStep);
 
 private:
 	// Attributes
